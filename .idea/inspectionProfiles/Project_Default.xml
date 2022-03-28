@@ -1,0 +1,18 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="sklearn.train_test_split" />
+          <option value="test.simple_facerec" />
+          <option value="keras.layers.normalization.BatchNormalization" />
+          <option value="face_recognition" />
+          <option value="sklearn.tree.DecisionTreeClassifie" />
+          <option value="DT.model_selection" />
+          <option value="Chefboost" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
