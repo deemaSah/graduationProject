@@ -4,6 +4,7 @@ import imutils
 import pickle
 import cv2
 import os
+import mysql.connector
 
 #set file's path
 dataset ='./dataset'
@@ -76,3 +77,21 @@ data = {"embeddings": trainingEmbeddings, "names": trainingNames}
 f = open(embeddings, "wb")
 f.write(pickle.dumps(data))
 f.close()
+print(trainingNames.__len__())
+
+# saving data to mysql database
+db = mysql.connector.connect(host="localhost",user="root",passwd="root",database="face_recognetion")
+
+mycursor=db.cursor()
+sql = ("INSERT INTO data"
+       "(embedding,name,ID)"
+       "VALUES(%s,%s,%s)")
+u=0
+for i in trainingEmbeddings:
+
+ data2=(trainingEmbeddings[u].__str__(),trainingNames[u],0)
+ mycursor.execute(sql,data2)
+ db.commit()
+ u+=1
+mycursor.close()
+print(trainingEmbeddings.__len__())
