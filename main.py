@@ -1,60 +1,42 @@
-from imutils import paths
+from imutils.video import VideoStream
 import numpy as np
 import imutils
 import pickle
+import time
 import cv2
 import os
-import mysql.connector
 
-#set file's path
-dataset ='./dataset'
-embeddings = './output/embeddings.pickle'
 detector_path = './face_detection_model'
-model ='./openface_nn4.small2.v1.t7'
+embedding_model = './openface_nn4.small2.v1.t7'
+recognizer_path = './output/recognizer.pickle'
+le_path = './output/le.pickle'
 Confidence = 0.5
 
-# Download caffe & troch model
 protoPath = os.path.sep.join([detector_path, "deploy.prototxt"])
 modelPath = os.path.sep.join([detector_path,"res10_300x300_ssd_iter_140000.caffemodel"])
-caffe_model = cv2.dnn.readNetFromCaffe(protoPath, modelPath)#Download a caffe model
-troch_model = cv2.dnn.readNetFromTorch(model)#Download a Troch model
+caffe_model = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
+torch_model = cv2.dnn.readNetFromTorch(embedding_model)
+svm_model = pickle.loads(open(recognizer_path, "rb").read())
+le = pickle.loads(open(le_path, "rb").read())#الداتا تيجي من داتا بيس
 
-# training data
-imagePaths = list(paths.list_images(dataset))
-trainingEmbeddings = []
-trainingNames = []
-numOfFaces = 0
+img = cv2.imread("cut.jpg")
 
-# Extracting embed vectors for faces
-for (i, imagePath) in enumerate(imagePaths):
-    name = imagePath.split(os.path.sep)[-2]# Extract the person's name from the path
-    image = cv2.imread(imagePath)
+#هون بدنا نضيف ياخد سكرين شوت من الكاميرا يخزن الصورة وهي الي بعمل عليها بروسسيسنج وبدل كاميرا اللاب توب كاميرا المراقبة
+list=["cut.jpg"] # list of images from camera
+x=0
+for i in list:
+    image = cv2.imread(i)
     image = imutils.resize(image, width=600)
     (h, w) = image.shape[:2]
-    cv2.imwrite("cut.jpg", image)
-
-
-
-    # preprocess before passing it through our deep neural network for classification.
+    #cv2.imwrite("copy"+x+".jpg", image)
+    x+=1
     imageBlob = cv2.dnn.blobFromImage(
         cv2.resize(image, (300, 300)), 1.0, (300, 300),
         (104.0, 177.0, 123.0), swapRB=False, crop=False)
-    # We assumed that the average pixel values of
-    # the three layers are (123.0 , 177.0 , 104.0) because the Caffe model is a pre-trained model on the
-    # ImageNet training dataset
-
     caffe_model.setInput(imageBlob)
-
     detections = caffe_model.forward()
-   # print("detections")
-#    print(detections[0, 0, :, 2])
 
-    # Processing detected faces
-    # ensure at least one face was found
-    if len(detections) > 0:
-        i = np.argmax(detections[0, 0, :, 2])
-        #print("i")
-        #print(i)
+    for i in range(0, detections.shape[2]):
         confidence = detections[0, 0, i, 2]
         if confidence > Confidence:
             box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -65,33 +47,24 @@ for (i, imagePath) in enumerate(imagePaths):
                 continue
 
 
-            # quantification of the face
             faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
                 (96, 96), (0, 0, 0), swapRB=True, crop=False)
-            troch_model.setInput(faceBlob)
-            vec = troch_model.forward()
-            trainingNames.append(name)
-            trainingEmbeddings.append(vec.flatten())
-            numOfFaces += 1
-data = {"embeddings": trainingEmbeddings, "names": trainingNames}
-f = open(embeddings, "wb")
-f.write(pickle.dumps(data))
-f.close()
-print(trainingNames.__len__())
+            torch_model.setInput(faceBlob)
+            vec = torch_model.forward()
+            preds = svm_model.predict_proba(vec)[0]
+            j = np.argmax(preds)
+            proba = preds[j]
+            name = le.classes_[j]
 
-# saving data to mysql database
-db = mysql.connector.connect(host="localhost",user="root",passwd="root",database="face_recognetion")
-
-mycursor=db.cursor()
-sql = ("INSERT INTO data"
-       "(embedding,name,ID)"
-       "VALUES(%s,%s,%s)")
-u=0
-for i in trainingEmbeddings:
-
- data2=(trainingEmbeddings[u].__str__(),trainingNames[u],0)
- mycursor.execute(sql,data2)
- db.commit()
- u+=1
-mycursor.close()
-print(trainingEmbeddings.__len__())
+            text = "{}: {:.2f}%".format(name, proba * 100)
+            y = startY - 10 if startY - 10 > 10 else startY + 10
+            cv2.rectangle(image, (startX, startY), (endX, endY),
+                          (0, 0, 255), 2)
+            cv2.putText(image, text, (startX, y),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+# show the output frame
+    cv2.imshow("Frame", image)
+    cv2.imwrite("copy" + x.__str__()+ ".jpg", image)
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
+        break
