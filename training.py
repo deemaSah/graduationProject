@@ -21,5 +21,3 @@ f.close()
 f = open(le_path, "wb")
 f.write(pickle.dumps(le))
 f.close()
-
-

@@ -17,9 +17,9 @@ modelPath = os.path.sep.join([detector_path,"res10_300x300_ssd_iter_140000.caffe
 caffe_model = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
 torch_model = cv2.dnn.readNetFromTorch(embedding_model)
 svm_model = pickle.loads(open(recognizer_path, "rb").read())
-le = pickle.loads(open(le_path, "rb").read())#الداتا تيجي من داتا بيس
+le = pickle.loads(open(le_path, "rb").read()) # الداتا تيجي من داتا بيس
 
-img = cv2.imread("cut.jpg")
+img = cv2.imread("sample_image.jpg") # from camera
 
 #هون بدنا نضيف ياخد سكرين شوت من الكاميرا يخزن الصورة وهي الي بعمل عليها بروسسيسنج وبدل كاميرا اللاب توب كاميرا المراقبة
 list=["cut.jpg"] # list of images from camera
