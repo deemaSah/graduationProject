@@ -1,33 +1,29 @@
-import cx_Oracle
+# import the opencv library
+import cv2
 
+# define a video capture object
+vid = cv2.VideoCapture(0)
+z=0
+list=[]
+while (True):
 
-conStr='system/deema@localhost:1521/orcl'
+    # Capture the video frame
+    # by frame
+    ret, frame = vid.read()
 
-conn = cx_Oracle.connect(conStr)
-cur = conn.cursor()
-sqlTxt='select * from "SYSTEM"."EMPLOYEES" '
-cur.execute(sqlTxt)
-records = cur.fetchall()
-for record in records:
-    #name = imagePath.split(os.path.sep)[-2]# Extract the person's name from the path
-    name = record[1]
-    query='select * from "SYSTEM"."TRAININGIMG" where EMP_ID =:1 '
-    #print(record[0])
-    cur.execute(query,(record[0],))
-    images= cur.fetchall()
-    print(images)
-    import cv2
-    import imutils
+    # Display the resulting frame
+    cv2.imshow('frame', frame)
+    cv2.imwrite("img"+z.__str__() +".jpg", frame)
+    list.append("img"+z.__str__() +".jpg")
+    z=z+1
+    print(list)
+    # the 'q' button is set as the
+    # quitting button you may use any
+    # desired button of your choice
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
 
-    for img in images:
-     for i in range(1,img.__len__()):
-      image = cv2.imread(img[i])
-      image = imutils.resize(image, width=600)
-      (h, w) = image.shape[:2]
-      #cv2.imwrite("cut"+i.__str__()+".jpg", image)
-query='INSERT INTO "SYSTEM"."EMBADDINGS" VALUES (0, \'1\',\'1\')'
-cur.execute(query)
-conn.commit()
-cur.close()
-conn.close()
-
+# After the loop release the cap object
+vid.release()
+# Destroy all the windows
+cv2.destroyAllWindows()

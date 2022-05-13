@@ -105,7 +105,10 @@ f.close()
 
 for i in range(0, trainingNames.__len__()):
     query='INSERT INTO "SYSTEM"."EMBADDINGS" (EMBADDINGS, EMP_ID) VALUES (:1, :2)'
-    cur.execute(query,(trainingEmbeddings[i].__str__(),arrEmpID[i],))
+    cur.execute(query,[trainingEmbeddings[i].__str__(),arrEmpID[i]])
+conn.commit()
+cur.close()
+conn.close()
 
 
 
