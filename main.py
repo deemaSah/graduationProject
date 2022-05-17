@@ -8,7 +8,7 @@ import time
 import cv2
 import os
 # define a video capture object
-vid = cv2.VideoCapture(0)
+vid = cv2.VideoCapture("rtsp://192.168.1.133:554/profile2")
 z=0
 list=[]
 while (True):
@@ -53,6 +53,7 @@ while (True):
         caffe_model.setInput(imageBlob)
         detections = caffe_model.forward()
 
+
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
             if confidence > Confidence:
@@ -81,6 +82,7 @@ while (True):
                 # show the output frame
                 # cv2.imshow("Frame", image)
                 cv2.imwrite("copy\copy" + x.__str__() + ".jpg", image)
+    list=[]
 
     # the 'q' button is set as the
     # quitting button you may use any
