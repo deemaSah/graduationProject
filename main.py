@@ -1,4 +1,5 @@
 # import the opencv library
+import face_recognition
 import cv2
 from imutils.video import VideoStream
 import numpy as np
@@ -7,9 +8,12 @@ import pickle
 import time
 import cv2
 import os
+
+
 # define a video capture object
-vid = cv2.VideoCapture("rtsp://192.168.1.133:554/profile2")
+vid = cv2.VideoCapture(0)
 z=0
+u=0
 list=[]
 while (True):
 
@@ -70,19 +74,38 @@ while (True):
                 vec = torch_model.forward()
                 preds = svm_model.predict_proba(vec)[0]
                 j = np.argmax(preds)
+                print("vec",len(vec[0]))
+                print(j)
                 proba = preds[j]
-                name = le.classes_[j]
+                if preds[j] > 0.6 :
+                    name = le.classes_[j]
+                    text = "{}: {:.2f}%".format(name, proba * 100)
+                    print(text)
+                    y = startY - 10 if startY - 10 > 10 else startY + 10
+                    cv2.rectangle(image, (startX, startY), (endX, endY),
+                                  (0, 0, 255), 2)
+                    cv2.putText(image, text, (startX, y),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+                    # show the output frame
+                    # cv2.imshow("Frame", image)
+                    cv2.imwrite("copy\copy" + u.__str__() + ".jpg", image)
+                    u=u+1
+                else:
+                    name = "vestor"
+                    text = "{}: {:.2f}%".format(name, proba * 100)
+                    print(text)
+                    y = startY - 10 if startY - 10 > 10 else startY + 10
+                    cv2.rectangle(image, (startX, startY), (endX, endY),
+                                  (0, 0, 255), 2)
+                    cv2.putText(image, text, (startX, y),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+                    # show the output frame
+                    # cv2.imshow("Frame", image)
+                    cv2.imwrite("copy\copy" + u.__str__() + ".jpg", image)
+                    u = u + 1
 
-                text = "{}: {:.2f}%".format(name, proba * 100)
-                y = startY - 10 if startY - 10 > 10 else startY + 10
-                cv2.rectangle(image, (startX, startY), (endX, endY),
-                              (0, 0, 255), 2)
-                cv2.putText(image, text, (startX, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
-                # show the output frame
-                # cv2.imshow("Frame", image)
-                cv2.imwrite("copy\copy" + x.__str__() + ".jpg", image)
     list=[]
+
 
     # the 'q' button is set as the
     # quitting button you may use any
