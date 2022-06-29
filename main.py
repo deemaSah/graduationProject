@@ -8,10 +8,17 @@ import pickle
 import time
 import cv2
 import os
+import cx_Oracle
+# create connection
+conStr='system/deema@localhost:1521/orcl'
 
+conn = cx_Oracle.connect(conStr)
+cur = conn.cursor()
+########################################################
 
 # define a video capture object
 vid = cv2.VideoCapture(0)
+#vid2 = cv2.VideoCapture(0)
 z=0
 u=0
 list=[]
@@ -20,11 +27,14 @@ while (True):
     # Capture the video frame
     # by frame
     ret, frame = vid.read()
+    #ret2, frame2 = vid2.read()
 
     # Display the resulting frame
     cv2.imshow('frame', frame)
-    cv2.imwrite("images\img"+z.__str__() +".jpg", frame)
-    list.append("images\img"+z.__str__() +".jpg")
+   # cv2.imshow('frame2', frame2)
+    cv2.imwrite("images\imgA"+z.__str__() +".jpg", frame)
+    list.append("images\imgA"+z.__str__() +".jpg")
+    path = "images\imgA"+z.__str__() +".jpg"
     z=z+1
     ############################################################################################
     detector_path = './face_detection_model'
@@ -35,18 +45,17 @@ while (True):
 
     protoPath = os.path.sep.join([detector_path, "deploy.prototxt"])
     modelPath = os.path.sep.join([detector_path, "res10_300x300_ssd_iter_140000.caffemodel"])
-    caffe_model = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
+    caffe_model = cv2.dnn.readNetFromCaffe(protoPath, modelPath)#with 0.80881 accuracy
     torch_model = cv2.dnn.readNetFromTorch(embedding_model)
     svm_model = pickle.loads(open(recognizer_path, "rb").read())
     le = pickle.loads(open(le_path, "rb").read())
 
     # img = cv2.imread("sample_image.jpg")  # from camera
-
-    # هون بدنا نضيف ياخد سكرين شوت من الكاميرا يخزن الصورة وهي الي بعمل عليها بروسسيسنج وبدل كاميرا اللاب توب كاميرا المراقبة
     # list = ["sample_image.jpg"]  # list of images from camera
     x = 0
-    for i in list:
-        image = cv2.imread(i)
+    for img in list:
+        #print(img)
+        image = cv2.imread(img)
         image = imutils.resize(image, width=600)
         (h, w) = image.shape[:2]
         # cv2.imwrite("copy"+x+".jpg", image)
@@ -56,7 +65,7 @@ while (True):
             (104.0, 177.0, 123.0), swapRB=False, crop=False)
         caffe_model.setInput(imageBlob)
         detections = caffe_model.forward()
-
+        os.remove(list[0])
 
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
@@ -73,11 +82,12 @@ while (True):
                 torch_model.setInput(faceBlob)
                 vec = torch_model.forward()
                 preds = svm_model.predict_proba(vec)[0]
+
                 j = np.argmax(preds)
                 print("vec",len(vec[0]))
-                print(j)
+                #print(j)
                 proba = preds[j]
-                if preds[j] > 0.6 :
+                if preds[j] >0.6 :
                     name = le.classes_[j]
                     text = "{}: {:.2f}%".format(name, proba * 100)
                     print(text)
@@ -88,12 +98,40 @@ while (True):
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
                     # show the output frame
                     # cv2.imshow("Frame", image)
-                    cv2.imwrite("copy\copy" + u.__str__() + ".jpg", image)
+                    #cv2.imwrite("copy\copy" + u.__str__() + ".jpg", image)
+                    now = time.gmtime()
+                    print(now)
+                    now = time.asctime(now)
+                    print(now)
                     u=u+1
+                    flag = img.split(os.path.sep)[1]
+                    if (img.__contains__("A")):
+                        print("yes")
+                        #############################################################
+                        sqlTxt = 'INSERT INTO "TIME" (TIME,CID) VALUES (:1,:2)'
+                        cur.execute(sqlTxt,[now,"0"])
+                        conn.commit()
+                        #############################################################
+                        # هون بدي اخزن الاي دي للموظف وانه داخل والساعة
+
+                    else:
+                        print("No")
+                        #############################################################
+                        sqlTxt = 'INSERT INTO "TIME" (TIME,CID) VALUES (:1,:2)'
+                        cur.execute(sqlTxt, [now, "1"])
+                        records = cur.fetchall()
+                        conn.commit()
+
+                        #############################################################
+                        # هون بدي اخزن الاي دي للموظف وانه خارج والساعة
                 else:
                     name = "vestor"
                     text = "{}: {:.2f}%".format(name, proba * 100)
                     print(text)
+                    now = time.gmtime()
+                    print(now)
+                    now = time.asctime(now)
+                    print(now)
                     y = startY - 10 if startY - 10 > 10 else startY + 10
                     cv2.rectangle(image, (startX, startY), (endX, endY),
                                   (0, 0, 255), 2)
@@ -101,10 +139,36 @@ while (True):
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
                     # show the output frame
                     # cv2.imshow("Frame", image)
-                    cv2.imwrite("copy\copy" + u.__str__() + ".jpg", image)
+                    #cv2.imwrite("copy\copy" + u.__str__() + ".jpg", image)
                     u = u + 1
+                    flag = img.__str__().split(os.path.sep)[1]
+                    if (img.__contains__("A")):
+                       print("yes")
+                        #هون بدي اخزن الاي دي للموظف وانه داخل والساعة
+                       #############################################################
+                       sqlTxt = 'INSERT INTO "TIME" (TIME,CID) VALUES (:1,:2)'
+                       cur.execute(sqlTxt, [now, "0"])
+                       conn.commit()
 
+                       #############################################################
+
+                    else:
+                        print("No")
+                        #############################################################
+                        sqlTxt = 'INSERT INTO "TIME" (TIME,CID) VALUES (:1,:2)'
+                        cur.execute(sqlTxt, [now, "1"])
+                        records = cur.fetchall()
+                        conn.commit()
+
+                        #############################################################
+                        #هون بدي اخزن الاي دي للموظف وانه خارج والساعة
+
+    #os.remove(list[0])
+
+
+            #print(i)
     list=[]
+
 
 
     # the 'q' button is set as the
@@ -112,8 +176,11 @@ while (True):
     # desired button of your choice
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
+cur.close()
+conn.close()
 # After the loop release the cap object
 vid.release()
 # Destroy all the windows
 cv2.destroyAllWindows()
+os.remove(path)
+
